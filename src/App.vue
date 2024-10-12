@@ -1,68 +1,71 @@
 <template>
     <div id="app" class="pt-5 pb-5" style="height: 100%;">
         <b-container>
-            <b-row v-if="questionNumber === 0">
+            <b-row>
                 <b-col cols="12">
-                    <b-card>
-                        <b-card-body>
-                            <b-card-text>
-                                <b-button variant="success" class="d-block w-100 fw-bold fs-5" @click="start">Rozpocznij quiz</b-button>
-                            </b-card-text>
-                            <b-card-text v-if="questionsAnswered.length > 0">
-                                <b-row>
-                                    <b-col cols="12" v-for="(answered, key) in questionsAnswered" :key="key">
-                                        <b-row v-if="answered !== undefined" class="mt-5">
-                                            <b-col cols="12">
-                                                Pytanie: <b>{{answered.question}}</b>
-                                            </b-col>
-                                            <b-col cols="4">Odpowiedzi: </b-col>
-                                            <b-col cols="2" v-for="(char, key) in ['A', 'B', 'C', 'D']" :key="key">
-                                                <div v-if="answered.selected === char" class="d-inline-block" :style="answered.answer === char ? 'border: 2px solid rgb(22, 119, 74);' : 'border: 2px solid rgb(200, 48, 63);'" style=" border-radius: 100%; padding: 0 7px;">{{char}}</div>
-                                                <div v-if="answered.selected !== char" class="d-inline-block">{{char}}</div>
-                                                : <span :class="answered.answer === char ? 'text-success fw-bold' : ''">{{answered[char]}}</span>
-                                            </b-col>
-                                        </b-row>
-                                    </b-col>
-                                </b-row>
-                            </b-card-text>
-                        </b-card-body>
-                    </b-card>
-                </b-col>
-            </b-row>
-            <b-row v-if="questionNumber > 0">
-                <b-col cols="12" class="points-box mt-5">
-                    <b-card class="p-4">
-                        <b-card-body>
-                            <b-card-text class="fw-bold fs-3 text-end">
-                                <b-progress :value="progress" variant="success" striped></b-progress>
-                            </b-card-text>
-                            <b-card-text class="fw-bold fs-3 text-end">Pytanie: {{questionNumber}}/{{questionsAll}}</b-card-text>
-                        </b-card-body>
-                    </b-card>
-                </b-col>
-                <b-col cols="12" class="points-box mt-5">
-                    <b-card class="p-4">
-                        <b-card-title>{{questionsAnswered[questionNumber].question}}</b-card-title>
-                        <b-card-body>
-                            <b-card-text>
-                                <b-form-group>
+                    <b-table-simple hover caption-top responsive>
+                        <caption>
+                            Lista pytań:
+                            <a @click="addQuestion" class="float-end text-success" title="Dodaj nowe pytanie"><b-icon icon="plus-square"></b-icon></a>
+                        </caption>
+                        <b-thead head-variant="dark">
+                            <b-tr>
+                                <b-th>Lp.</b-th>
+                                <b-th>Pytanie</b-th>
+                                <b-th>Odpowiedzi <small class="text-success fw-bold">(+ zaznaczona prawidłowa)</small></b-th>
+                                <b-th>Edycja</b-th>
+                            </b-tr>
+                        </b-thead>
+                        <b-tbody>
+                            <b-tr v-for="(question, key) in questions" :key="key">
+                                <b-td>{{key + 1}}</b-td>
+                                <b-td>{{question.question}}</b-td>
+                                <b-td class="text-right">
                                     <b-row>
-                                        <b-col cols="6" v-for="(char, key) in ['A', 'B', 'C', 'D']" :key="key" class="mt-3">
-                                            <b-form-radio v-model="questionsAnswered[questionNumber].selected" name="answers" :value="char" class="p-3 fs-4"><span class="ms-3">{{questionsAnswered[questionNumber][char]}}</span></b-form-radio>
-                                        </b-col>
+                                        <b-col cols="6" :class="question.answer === 'A' ? 'text-success fw-bold' : ''">A: {{question.A}}</b-col>
+                                        <b-col cols="6" :class="question.answer === 'B' ? 'text-success fw-bold' : ''">B: {{question.B}}</b-col>
+                                        <b-col cols="6" :class="question.answer === 'C' ? 'text-success fw-bold' : ''">C: {{question.C}}</b-col>
+                                        <b-col cols="6" :class="question.answer === 'D' ? 'text-success fw-bold' : ''">D: {{question.D}}</b-col>
                                     </b-row>
-                                </b-form-group>
-                            </b-card-text>
-                            <b-card-text>
-                                <b-button variant="success" class="d-block w-25 fw-bold fs-5 float-end" @click="next" :disabled="!questionsAnswered[questionNumber].selected">
-                                    <span v-if="questionNumber < questionsAll">Następne pytanie</span>
-                                    <span v-if="questionNumber === questionsAll">Zakoncz quiz</span>
-                                </b-button>
-                            </b-card-text>
-                        </b-card-body>
-                    </b-card>
+                                </b-td>
+                                <b-td>
+                                    <a @click="editQuestion(key)" ref="btnShow" class="text-success" title="Edytuj pytanie"><b-icon icon="pencil-square"></b-icon></a>
+                                </b-td>
+                            </b-tr>
+                        </b-tbody>
+                        <b-tfoot>
+                            <b-tr>
+                                <b-td colspan="4" variant="secondary" class="text-right">
+                                    Ilość pytań: <b>{{questions.length}}</b>
+                                </b-td>
+                            </b-tr>
+                        </b-tfoot>
+                    </b-table-simple>
                 </b-col>
             </b-row>
+
+            <b-modal id="modal-1" title="Dodaj / edytuj pytanie" size="lg" @ok="saveQuestion">
+                <b-row>
+                    <b-col cols="12">
+                        <label for="field-question">Small:</label>
+                        <b-form-textarea class="mb-3" id="field-question" placeholder="Small textarea" v-model="newEditQuestion.question"></b-form-textarea>
+                    </b-col>
+                    <b-col cols="12">
+                        <label for="field-A">Odpowiedź A:</label>
+                        <b-form-input id="field-A" v-model="newEditQuestion.A" type="text" class="mb-3" required></b-form-input>
+                        <label for="field-B">Odpowiedź B:</label>
+                        <b-form-input id="field-B" v-model="newEditQuestion.B" type="text" class="mb-3" required></b-form-input>
+                        <label for="field-C">Odpowiedź C:</label>
+                        <b-form-input id="field-C" v-model="newEditQuestion.C" type="text" class="mb-3" required></b-form-input>
+                        <label for="field-D">Odpowiedź D:</label>
+                        <b-form-input id="field-D" v-model="newEditQuestion.D" type="text" class="mb-3" required></b-form-input>
+                    </b-col>
+                    <b-col cols="12">
+                        <label for="field-answer">Prawidłowa odpowiedź:</label>
+                        <b-form-select v-model="newEditQuestion.answer" :options="[{value: 'A', text: 'A'}, {value: 'B', text: 'B'}, {value: 'C', text: 'C'}, {value: 'D', text: 'D'}]" class="ms-3 mb-3 w-25" id="field-answer"></b-form-select>
+                    </b-col>
+                </b-row>
+            </b-modal>
         </b-container>
     </div>
 </template>
@@ -74,54 +77,39 @@ export default {
     name: 'App',
     data () {
         return {
-            questionsAll: 3,
-            questionNumber: 0,
-            questionsAnswered: [],
-            questionsTmp: questionsData,
-            questions: [],
-            progress: 0,
-            previousNumbers: []
+            questions: questionsData,
+            newEditQuestion: {},
+            newEditQuestionId: 0
         }
     },
     methods: {
-        start: function () {
-            this.previousNumbers = []
-            this.questionsAnswered = []
-            this.random()
+        addQuestion: function () {
+            this.newEditQuestionId = 0
+            this.newEditQuestion = {}
+            this.$root.$emit('bv::show::modal', 'modal-1', '#btnShow')
         },
-        next: function () {
-            if (this.questionNumber === this.questionsAll) {
-                this.questionNumber = 0
-
-                return true
+        editQuestion: function (id) {
+            this.newEditQuestionId = id
+            this.newEditQuestion = this.questions[this.newEditQuestionId]
+            this.$root.$emit('bv::show::modal', 'modal-1', '#btnShow')
+        },
+        saveQuestion: function () {
+            if (this.newEditQuestionId > 0) {
+                this.questions[this.newEditQuestionId] = this.newEditQuestion
+            } else {
+                this.questions.push(this.newEditQuestion)
             }
 
-            this.random()
-        },
-        random: function () {
-            if (this.questions.length === 0) {
-                this.prepare()
-            }
+            localStorage.setItem('questions', JSON.stringify(Object.assign({}, this.questions)))
+        }
+    },
+    mounted: function () {
+        let questions = localStorage.getItem('questions')
 
-            let number = Math.round(Math.random() * (this.questions.length - 1) + 1)
-
-            if (this.previousNumbers.includes(number)) {
-                this.random()
-            }
-
-            this.questionNumber++
-            this.previousNumbers.push(number)
-            this.questionsAnswered[this.questionNumber] = this.questions[number]
-            this.progress = (this.questionNumber / this.questionsAll) * 100
-        },
-        prepare: function () {
-            let questions = this.questions
-
-            this.questionsTmp.forEach(function(item) {
-                questions.push(item)
-            })
-
-            this.questions = questions
+        if (questions === null) {
+            localStorage.setItem('questions', JSON.stringify(Object.assign({}, questionsData)))
+        } else {
+            // this.questions = questions
         }
     }
 }
